@@ -1,0 +1,42 @@
+{
+  "name": "ITD5",
+  "slug": "itd5",
+  "description": "IT consulting, digital transformation, cybersecurity, SaaS, and 3D printing services. Dublin, Ireland.",
+  "mission": "Build and operate autonomous AI-powered business systems that deliver measurable digital transformation for ITD5 and its clients.",
+  "values": [
+    "Security first — ISO 27001, GDPR, NIST aligned",
+    "Automation over manual — if it can be automated, automate it",
+    "Transparent by default — full audit trails on all agent work",
+    "Ship fast, verify always — CI/CD, QA, and security on every release"
+  ],
+  "owner": {
+    "name": "Seamus Walsh",
+    "github": "5hay196",
+    "role": "Founder & CEO",
+    "location": "Dublin, Ireland"
+  },
+  "budget": {
+    "currency": "EUR",
+    "monthly_limit": 500,
+    "alert_threshold": 400
+  },
+  "agents": [
+    "ceo",
+    "cto",
+    "cso",
+    "qa"
+  ],
+  "goals_file": "goals/q2-2026.md",
+  "compliance": [
+    "ISO 27001",
+    "GDPR",
+    "NIST CSF"
+  ],
+  "created": "2026-03-31",
+  "stack": {
+    "orchestration": "paperclip",
+    "skills": "gstack",
+    "agents": "claude-code",
+    "version_control": "github"
+  }
+}
