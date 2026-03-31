@@ -1,0 +1,40 @@
+# ITD5 Agentic Stack — Docker Compose
+# Wraps Paperclip with all dependencies
+# Usage: cp .env.example .env && docker compose up -d
+
+services:
+  paperclip:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - paperclip_data:/app/data
+      - ./companies:/app/companies:ro
+    ports:
+      - "3100:3100"  # Paperclip API
+      - "3101:3101"  # Paperclip UI
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - PAPERCLIP_PORT=3100
+      - PAPERCLIP_UI_PORT=3101
+    command: sh -c "npm install -g pnpm@9 && npx paperclipai onboard --yes && pnpm dev"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  paperclip_data:
+    driver: local
+
+# Notes:
+# - Paperclip uses an embedded PostgreSQL by default (no external DB needed)
+# - Set DATABASE_URL in .env to use your own Postgres instance
+# - For mobile access, use Tailscale to tunnel to port 3100
+# - gstack skills are installed locally on your machine, not in Docker
+#   Install gstack: git clone https://github.com/garrytan/gstack ~/.claude/skills/gstack
