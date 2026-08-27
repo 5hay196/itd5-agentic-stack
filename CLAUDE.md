@@ -1,84 +1,36 @@
 # CLAUDE.md — ITD5 Agentic Stack
 
-This file configures Claude Code to use the gstack skill system for the ITD5 Agentic Stack project.
+## Project purpose
 
----
+ITD5 Agentic Stack combines the Paperclip company operating system with optional gstack specialist workflows. This repository owns the ITD5 operating model and the safe Docker/operator experience.
 
-## gstack
+## Runtime
 
-Use `/browse` from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
+- Canonical start: `bash scripts/launch.sh`
+- Diagnostics: `bash scripts/doctor.sh`
+- Compose service: official `ghcr.io/paperclipai/paperclip` image
+- Dashboard: `http://localhost:3100`
+- Readiness: `GET /api/health`
+- Persistent state: `data/paperclip`
+- Company definitions: `companies/itd5/`, mounted read-only
 
-Available skills:
-`/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/design-consultation`, `/design-shotgun`, `/design-html`, `/review`, `/ship`, `/land-and-deploy`, `/canary`, `/benchmark`, `/browse`, `/connect-chrome`, `/qa`, `/qa-only`, `/design-review`, `/setup-browser-cookies`, `/setup-deploy`, `/retro`, `/investigate`, `/document-release`, `/codex`, `/cso`, `/autoplan`, `/careful`, `/freeze`, `/guard`, `/unfreeze`, `/gstack-upgrade`, `/learn`
+Do not run onboarding from a container restart command. Do not delete `data/paperclip` to fix a startup problem. Back it up before upgrades.
 
-If gstack skills aren't working, run:
-```bash
-cd ~/.claude/skills/gstack && ./setup
-```
+## Delivery workflow
 
----
+1. `/office-hours` or `/plan-ceo-review` for intent and scope
+2. `/plan-eng-review` for architecture and failure modes
+3. Build the smallest useful change
+4. `/review` for production risks
+5. `/qa` or `/qa-only` for browser behavior
+6. `/cso` for client-facing or data-handling changes
+7. `/ship` only after evidence is complete
+8. `/retro` to capture the process improvement
 
-## Project Context: ITD5
+## Safety
 
-**Company:** ITD5 — IT consulting, digital transformation, cybersecurity, SaaS, and 3D printing services.
-
-**Owner:** Seamus Walsh — Dublin, Ireland.
-
-**Mission:** Build and operate autonomous AI-powered business systems for ITD5 and its clients.
-
-**Key projects:**
-- ITD5 client portal (SaaS platform)
-- WEEE / data destruction service platform
-- Cybersecurity tooling and red team automation
-- B2B IT consultancy hub and SharePoint resource platform
-
----
-
-## Sprint Workflow
-
-Follow this order for all feature work:
-
-1. `/office-hours` — start here, reframe the problem
-2. `/plan-ceo-review` — 10-section product review
-3. `/plan-eng-review` — architecture, diagrams, edge cases
-4. Build
-5. `/review` — staff engineer code review
-6. `/qa` — real browser QA
-7. `/cso` — security audit (for any client-facing or data-handling work)
-8. `/ship` — sync, test, push, PR
-9. `/document-release` — keep docs current
-10. `/retro` — weekly reflection
-
----
-
-## Agent Roles (Paperclip Integration)
-
-| Paperclip Agent | gstack Skill Mapping |
-|---|---|
-| CEO | `/office-hours`, `/plan-ceo-review`, `/autoplan` |
-| CTO | `/plan-eng-review`, `/review`, `/investigate`, `/ship` |
-| CSO | `/cso`, `/careful`, `/guard` |
-| QA Lead | `/qa`, `/qa-only`, `/canary`, `/benchmark` |
-| Designer | `/design-consultation`, `/design-shotgun`, `/design-html`, `/design-review` |
-| Release Eng | `/ship`, `/land-and-deploy`, `/document-release` |
-
----
-
-## Security Notes
-
-- Always run `/cso` before shipping any client-facing feature
-- Use `/careful` and `/guard` when working on production data or destructive ops
-- Cybersecurity work: align with ISO 27001, GDPR, NIST frameworks
-- WEEE/data destruction: treat all data as sensitive until certified destroyed
-
----
-
-## Paperclip Integration
-
-Paperclip runs at `http://localhost:3100` (or via Tailscale for mobile).
-
-When Paperclip assigns a ticket to you:
-1. Read the goal ancestry from the ticket context
-2. Use the appropriate gstack skills for the task type
-3. Report back with ticket updates when work is complete
-4. Flag blockers or budget concerns to management tier
+- Keep secrets in `.env`, never in tracked files.
+- Keep Paperclip private and authenticated by default.
+- Treat client, WEEE, and data-destruction information as sensitive.
+- Avoid speculative scope and unrelated cleanup.
+- Prefer reversible changes with explicit validation and rollback steps.

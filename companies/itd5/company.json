@@ -20,18 +20,9 @@
     "monthly_limit": 500,
     "alert_threshold": 400
   },
-  "agents": [
-    "ceo",
-    "cto",
-    "cso",
-    "qa"
-  ],
+  "agents": ["ceo", "cto", "cso", "qa"],
   "goals_file": "goals/q2-2026.md",
-  "compliance": [
-    "ISO 27001",
-    "GDPR",
-    "NIST CSF"
-  ],
+  "compliance": ["ISO 27001", "GDPR", "NIST CSF"],
   "created": "2026-03-31",
   "stack": {
     "orchestration": "paperclip",

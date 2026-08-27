@@ -1,100 +1,81 @@
-# ITD5 Agentic Stack — Sprint Workflow
+# ITD5 operating workflow
 
-## Weekly Sprint Cycle
+## First boot
 
-### Monday — Sprint Planning
-1. **CEO Agent** reviews Q2 2026 goals (`companies/itd5/goals/q2-2026.md`)
-2. CEO Agent creates Paperclip tickets for the week
-3. Tickets assigned to CTO, CSO, or QA agents
-4. gstack sprint initialized with weekly goals
+1. Run `bash scripts/launch.sh` or the one-line installer.
+2. Open the printed dashboard URL.
+3. Complete Paperclip's first-admin setup.
+4. Create or configure the ITD5 company using `companies/itd5/company.json`.
+5. Create the CEO, CTO, CSO, and QA agents using the files under `companies/itd5/agents/`.
+6. Load the current goals from `companies/itd5/goals/`.
+7. Configure an approved LLM provider and agent adapter before enabling execution.
+8. Run `bash scripts/doctor.sh` and record the first healthy state.
 
-### Tuesday–Thursday — Execution
-- **CTO Agent** runs gstack coding sessions
-  - Target: ship production-ready code
-  - Commit frequently with descriptive messages
-  - All code goes through PR before merge
-- **CSO Agent** reviews any new features for security
-  - OWASP checklist on client-facing endpoints
-  - GDPR check on any data handling
-- **QA Agent** tests completed tickets in Paperclip
-  - Resolve 20+ tickets per week
-  - Log bugs back to CTO Agent via Paperclip
+The repository stores the operating model; Paperclip stores the live execution state. Keep both aligned through reviewed changes.
 
-### Friday — Retro & Review
-1. All agents submit weekly KPI report
-2. **CEO Agent** runs `retro` in gstack
-3. Budget reviewed (monthly, first Friday)
-4. Goals doc updated with progress
-5. Next sprint priorities set
+## Weekly cycle
 
----
+### Plan
 
-## Paperclip Ticket Flow
+- CEO reviews company goals, budget, client commitments, and open Paperclip work.
+- Convert priorities into bounded tickets with an owner, acceptance criteria, risk, and target date.
+- CTO, CSO, and QA confirm dependencies and review gates before work starts.
 
+### Execute
+
+- CTO owns implementation and technical decisions.
+- CSO reviews security, privacy, data handling, and compliance impact.
+- QA defines the validation path early and records evidence against the ticket.
+- Agents report blockers, budget risk, and scope changes in Paperclip instead of silently expanding work.
+
+### Review and release
+
+Use the smallest applicable gstack sequence:
+
+```text
+product intent → /office-hours or /plan-ceo-review
+architecture   → /plan-eng-review
+implementation → build
+code quality   → /review
+browser QA     → /qa or /qa-only
+security       → /cso
+release        → /ship
+reflection     → /retro
 ```
-Backlog → In Progress → In Review → Done
-   ↑                          │
-   └────── Bug Found ──────┘
-```
 
-- **Backlog**: CEO Agent creates tickets from goals
-- **In Progress**: CTO/CSO/QA Agent picks up
-- **In Review**: QA Agent reviews
-- **Done**: QA Agent closes after passing tests
+A client-facing or data-handling change does not ship until QA evidence and the required security review are complete.
 
----
+### Friday retro
 
-## gstack Sprint Commands
+- Review completed, blocked, reopened, and failed tickets.
+- Compare spend and activity with the Paperclip budget.
+- Capture one process improvement and one risk for the next sprint.
+- Update the goals file only through a reviewed repository change.
+
+## Recovery and operations
 
 ```bash
-# Start a new sprint
-gstack sprint start --name "week-XX" --goal "[goal description]"
-
-# Run coding session
-gstack run --agent cto --prompt "[task]"
-
-# Run retro
-gstack retro
-
-# Check sprint status
-gstack status
+bash scripts/doctor.sh
+bash scripts/validate.sh
+docker compose --env-file .env ps
+docker compose --env-file .env logs --tail=200 paperclip
+curl --fail http://localhost:3100/api/health
 ```
 
----
+A restart is safe and preserves data:
 
-## Monthly Budget Review (First Friday)
+```bash
+make restart
+```
 
-| Category | Monthly Budget |
-|----------|---------------|
-| Claude API (agents) | €300 |
-| Infrastructure (AWS) | €100 |
-| Tools & subscriptions | €50 |
-| Buffer | €50 |
-| **Total** | **€500** |
+Do not delete `data/paperclip` as a troubleshooting shortcut. Treat that directory as the system of record and back it up before upgrades or migrations.
 
-CEO Agent tracks spend and alerts if >80% budget used by week 3.
+## Change control
 
----
+Every change to deployment, secrets, agent prompts, company goals, or governance must be:
 
-## Onboarding a New Company
-
-1. Copy `companies/itd5/` as template
-2. Update `company.json` with new company details
-3. Update agent configs in `agents/`
-4. Create quarterly goals in `goals/`
-5. Run `scripts/bootstrap.sh` for new company
-6. Create Paperclip project for new company
-7. Initialize gstack sprint
-
----
-
-## Using Paperclip for Free (Self-Hosted)
-
-1. Clone: `git clone https://github.com/paperclipai/paperclip`
-2. Configure `.env` (see `.env.example`)
-3. Run: `docker-compose up -d`
-4. Access at `http://localhost:3000`
-5. Create projects for each agent: `itd5-ceo`, `itd5-cto`, `itd5-cso`, `itd5-qa`
-6. Agents interact via Paperclip API using `PAPERCLIP_API_KEY`
-
-This keeps all project data on your own infrastructure — no SaaS fees.
+- reviewed in Git;
+- validated by CI;
+- tested against a disposable or backed-up instance where practical;
+- documented if it changes the operator path;
+- rolled back by changing the image/configuration to the last known-good version, not by destroying state.
