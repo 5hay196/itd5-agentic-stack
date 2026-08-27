@@ -1,186 +1,149 @@
 # ITD5 Agentic Stack
 
-> **Paperclip** (company OS) + **gstack** (Claude Code skill engine) = a fully autonomous AI-powered business, self-hosted and 100% free.
+> Paperclip is the operating system. gstack is the specialist execution layer. ITD5 is the operating model that connects them.
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Paperclip](https://img.shields.io/badge/Paperclip-OSS-black)](https://github.com/paperclipai/paperclip)
-[![gstack](https://img.shields.io/badge/gstack-OSS-orange)](https://github.com/garrytan/gstack)
+The ITD5 Agentic Stack is a self-hosted foundation for running AI-assisted company operations: goals, agents, work queues, governance, delivery workflows, security review, and quality gates.
 
----
+## The flagship promise
 
-## What is this?
-
-This repo is the **ITD5 Agentic Stack** — a batteries-included, self-hosted setup that combines:
-
-| Tool | Role | Cost |
-|---|---|---|
-| **[Paperclip](https://github.com/paperclipai/paperclip)** | Company OS — org charts, goals, tickets, budgets, heartbeats, governance dashboard | Free / MIT |
-| **[gstack](https://github.com/garrytan/gstack)** | 31 Claude Code slash-command skills — CEO, Eng Manager, Designer, QA, CSO, Release Engineer | Free / MIT |
-
-**Paperclip** orchestrates *who* works on *what* and *why*.  
-**gstack** gives your Claude Code agents the *how* — 31 specialist skills to execute with.
-
----
-
-## Quick Start (Local — 100% Free)
-
-### Requirements
-- Node.js 20+
-- pnpm 9.15+
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
-- Git, Bun v1.0+
-
-### 1. Clone this repo
+A fresh Linux machine with Docker and Git can go from zero to a persistent Paperclip dashboard with one command:
 
 ```bash
-git clone https://github.com/Shay196/itd5-agentic-stack.git
+curl -fsSL https://raw.githubusercontent.com/5hay196/itd5-agentic-stack/main/scripts/install.sh | bash
+```
+
+The installer clones or updates the stack in `~/.itd5-agentic-stack`, creates secure local secrets, starts the official Paperclip image, waits for `/api/health`, and prints the dashboard URL. It installs gstack only when Claude Code and Bun are already present; Paperclip remains useful without that optional integration.
+
+For a more inspectable install, download the script first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/5hay196/itd5-agentic-stack/main/scripts/install.sh -o install-itd5.sh
+bash install-itd5.sh
+```
+
+## Requirements
+
+For the Docker path:
+
+- Linux, macOS, or WSL2
+- Docker Engine or Docker Desktop with Docker Compose v2
+- Git and curl
+- A browser
+
+Node.js, pnpm, and Bun are not required to run Paperclip in Docker. Claude Code and Bun are optional and are needed only if you want the launcher to install gstack automatically.
+
+## Run from a checkout
+
+```bash
+git clone https://github.com/5hay196/itd5-agentic-stack.git
 cd itd5-agentic-stack
+bash scripts/launch.sh
 ```
 
-### 2. Run bootstrap (sets up everything)
+The launcher is idempotent. Running it again reuses the same `.env`, secrets, and `data/paperclip` directory.
+
+Open `http://localhost:3100`. On a fresh authenticated/private instance, use Paperclip's browser setup to sign in or claim the first admin. Then configure the ITD5 company and agents using the versioned definitions in `companies/itd5/`.
+
+## Operator commands
 
 ```bash
-chmod +x scripts/bootstrap.sh
-./scripts/bootstrap.sh
+bash scripts/doctor.sh       # prerequisites, secrets, JSON, Compose, health
+bash scripts/validate.sh     # local CI-equivalent validation
+bash scripts/backup.sh       # timestamped backup of Paperclip state
+make logs                   # follow Paperclip logs
+make ps                     # show service status
+make restart                # restart Paperclip
+make down                   # stop the stack without deleting data
 ```
 
-Or run manually:
+To remove the container but keep all data:
 
 ```bash
-# Start Paperclip
-npx paperclipai onboard --yes
-# Paperclip runs at http://localhost:3100
-
-# Install gstack skills into Claude Code
-git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
-cd ~/.claude/skills/gstack && ./setup
+docker compose --env-file .env down
 ```
 
-### 3. Open Paperclip Dashboard
+To start over, stop the stack and deliberately remove `data/paperclip`. This deletes the local Paperclip database, uploads, local secrets key, and agent workspace data.
 
-Navigate to `http://localhost:3100` — you'll see the ITD5 company org chart, goals, and agent queue.
+## Configuration
 
-### 4. Open Claude Code and start your first sprint
+`.env.example` is safe to commit. `scripts/launch.sh` copies it to `.env` and generates:
 
-```
-/office-hours
-```
+- `BETTER_AUTH_SECRET` for authenticated sessions
+- `PAPERCLIP_TOOL_ACTION_SIGNING_SECRET` for signed tool actions
 
----
+Never commit `.env` or expose these values. Set `PAPERCLIP_PUBLIC_URL` when accessing Paperclip through a LAN hostname, Tailscale address, reverse proxy, or HTTPS URL. Keep `PAPERCLIP_DEPLOYMENT_EXPOSURE=private` unless you have TLS, a firewall, and an explicit public deployment plan.
 
-## Docker (Alternative)
+The default deployment uses the official stable image `ghcr.io/paperclipai/paperclip:latest`, one host port (`3100`), and a bind-mounted data directory. For controlled environments, set `PAPERCLIP_IMAGE` to an approved release tag or immutable digest in `.env`.
 
-```bash
-cp .env.example .env
-# Fill in your API keys in .env
-docker compose up -d
-```
+## What is included
 
-Paperclip API: `http://localhost:3100`  
-Paperclip UI: `http://localhost:3101`
+- Official Paperclip self-hosted container
+- Persistent embedded database and Paperclip home directory
+- Authentication and signed-action secrets generated on first run
+- Health-checked restartable Compose service
+- ITD5 company, agent, goals, and governance definitions under `companies/itd5/`
+- Optional gstack installation for Claude Code
+- `doctor.sh`, Make targets, and CI validation
 
----
+The ITD5 JSON files are deliberately mounted as read-only reference material. Paperclip's supported Docker image does not automatically import arbitrary company JSON on startup; the dashboard setup and company/agent configuration remain an explicit operator step rather than a hidden mutation.
 
-## Repository Structure
+## Architecture
 
-```
-itd5-agentic-stack/
-├── README.md                    # This file
-├── .env.example                 # All config in one place
-├── docker-compose.yml           # One-command local launch
-├── CLAUDE.md                    # gstack skills pre-configured for Claude Code
-├── AGENTS.md                    # Multi-agent adapter map (Codex, Gemini, Cursor)
-├── LICENSE
-├── .gitignore
-├── scripts/
-│   ├── bootstrap.sh             # Full stack setup in one shot
-│   ├── start-paperclip.sh       # Launch Paperclip server
-│   └── install-gstack.sh        # Install gstack globally
-├── companies/
-│   └── itd5/
-│       ├── company.json         # ITD5 company definition for Paperclip
-│       ├── agents/
-│       │   ├── ceo.json         # CEO agent config
-│       │   ├── cto.json         # CTO / gstack-powered dev agent
-│       │   ├── cso.json         # Security Officer (maps to /cso skill)
-│       │   └── qa.json          # QA Lead (maps to /qa skill)
-│       └── goals/
-│           └── q2-2026.md       # Company goals flowing to all agents
-└── docs/
-    ├── ARCHITECTURE.md          # How Paperclip + gstack connect
-    ├── WORKFLOW.md              # Sprint workflow guide
-    └── PAPERCLIP-FREE-GUIDE.md  # Stay 100% free and self-hosted
+```text
+                         optional local skills
+                  ┌────────────────────────────┐
+                  │ Claude Code + gstack        │
+                  │ /office-hours /review /qa   │
+                  └─────────────┬──────────────┘
+                                │
+┌───────────────┐      ┌────────▼────────┐      ┌───────────────────────┐
+│ ITD5 source   │─────▶│ Paperclip       │─────▶│ Persistent /paperclip │
+│ company model │ read │ control plane   │      │ database + workspaces │
+└───────────────┘ only └────────┬────────┘      └───────────────────────┘
+                                │
+                         browser dashboard
+                             localhost:3100
 ```
 
----
+Paperclip handles company state, goals, work, budgets, governance, and agent coordination. gstack supplies repeatable specialist workflows for product thinking, engineering, QA, security, shipping, and retrospectives. API keys are optional at container startup but an agent provider must be configured before an agent can execute AI work.
 
-## How It All Connects
+## ITD5 operating model
 
-```
-[You / Shay196]
-     |
-     v
-[Paperclip Dashboard :3100]
-  - Define goals
-  - Review tickets
-  - Set budgets
-  - Approve strategy
-     |
-     v
-[AI Agents (Claude Code + gstack skills)]
-  CEO   --> /office-hours, /plan-ceo-review
-  CTO   --> /plan-eng-review, /review, /ship
-  CSO   --> /cso (OWASP + STRIDE audits)
-  QA    --> /qa, /qa-only, /canary
-     |
-     v
-[Your Codebase / Client Projects]
-```
-
----
-
-## gstack Skills Available
-
-Once installed, these slash commands are available inside Claude Code:
-
-| Skill | Specialist | Purpose |
+| Role | Responsibility | Primary gstack workflows |
 |---|---|---|
-| `/office-hours` | YC Office Hours | Start here — reframes your product idea |
-| `/plan-ceo-review` | CEO | 10-section product review |
-| `/plan-eng-review` | Eng Manager | Architecture, diagrams, edge cases |
-| `/design-consultation` | Design Partner | Full design system from scratch |
-| `/review` | Staff Engineer | Finds production bugs, auto-fixes |
-| `/qa` | QA Lead | Real browser, real clicks, fixes bugs |
-| `/cso` | Chief Security Officer | OWASP Top 10 + STRIDE threat model |
-| `/ship` | Release Engineer | Sync, test, push, open PR |
-| `/retro` | Eng Manager | Weekly team retro across all projects |
-| `/investigate` | Debugger | Systematic root-cause debugging |
-| `/browse` | QA Engineer | Real Chromium browser automation |
-| `/learn` | Memory | Compound learnings across sessions |
-| `/autoplan` | Review Pipeline | CEO + design + eng review in one command |
+| CEO | Strategy, priorities, clients, budget | `/office-hours`, `/plan-ceo-review`, `/autoplan` |
+| CTO | Architecture, delivery, infrastructure | `/plan-eng-review`, `/review`, `/ship` |
+| CSO | Security, GDPR, ISO/NIST alignment | `/cso`, `/careful`, `/guard` |
+| QA | Test planning, regression, acceptance | `/qa`, `/qa-only`, `/canary` |
 
-> Full list of 31 skills: see [CLAUDE.md](CLAUDE.md)
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/WORKFLOW.md`](docs/WORKFLOW.md), and [`companies/itd5/`](companies/itd5/).
 
----
+## Install gstack separately
 
-## Mobile Access
+The launcher detects Claude Code and Bun and installs gstack automatically by default. To run Paperclip only:
 
-To access your Paperclip dashboard from your phone:
+```bash
+GSTACK_INSTALL=never bash scripts/launch.sh
+```
 
-1. Install [Tailscale](https://tailscale.com/) on your machine and phone (free tier)
-2. Start Paperclip: `npx paperclipai onboard --yes`
-3. Access via your Tailscale IP: `http://[tailscale-ip]:3100`
+To install or update it explicitly:
 
----
+```bash
+bash scripts/install-gstack.sh
+```
 
-## Sources
+gstack is maintained by [Garry Tan](https://github.com/garrytan/gstack) and is licensed separately under MIT. Its current setup supports Claude Code and other hosts; use the upstream documentation for host-specific options.
 
-- Paperclip: https://github.com/paperclipai/paperclip
-- gstack: https://github.com/garrytan/gstack
-- Paperclip website: https://paperclip.ing
+## Mobile and LAN access
 
----
+For a private network or Tailscale deployment, set the reachable URL before starting:
+
+```bash
+PAPERCLIP_PUBLIC_URL=http://100.x.y.z:3100 bash scripts/launch.sh
+```
+
+Do not expose an unauthenticated or plain-HTTP Paperclip instance directly to the public internet. Put public deployments behind HTTPS, a firewall, and an explicit access policy.
 
 ## License
 
-MIT — built for ITD5 by Seamus Walsh (Shay196)
+The ITD5 configuration and scripts in this repository are MIT licensed. Paperclip and gstack remain separate upstream projects with their own licenses and release schedules.

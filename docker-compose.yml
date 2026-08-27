@@ -1,40 +1,60 @@
-# ITD5 Agentic Stack — Docker Compose
-# Wraps Paperclip with all dependencies
-# Usage: cp .env.example .env && docker compose up -d
+# ITD5 Agentic Stack — production-like local Compose deployment
+#
+# First run:
+#   ./scripts/launch.sh
+#
+# Direct Compose usage is also supported after creating .env and setting the
+# two required secrets. The image is the official Paperclip self-hosted image.
+
+name: itd5-agentic-stack
 
 services:
   paperclip:
-    image: node:20-alpine
-    working_dir: /app
-    volumes:
-      - paperclip_data:/app/data
-      - ./companies:/app/companies:ro
-    ports:
-      - "3100:3100"  # Paperclip API
-      - "3101:3101"  # Paperclip UI
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - PAPERCLIP_PORT=3100
-      - PAPERCLIP_UI_PORT=3101
-    command: sh -c "npm install -g pnpm@9 && npx paperclipai onboard --yes && pnpm dev"
+    image: ${PAPERCLIP_IMAGE:-ghcr.io/paperclipai/paperclip:latest}
+    init: true
     restart: unless-stopped
+    pids_limit: 2048
+    ports:
+      - "${PAPERCLIP_PORT:-3100}:3100"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3100"
+      SERVE_UI: "true"
+      HOME: "/paperclip"
+      PAPERCLIP_HOME: "/paperclip"
+      PAPERCLIP_INSTANCE_ID: "default"
+
+      # Keep the default safe for a workstation or private LAN deployment.
+      PAPERCLIP_DEPLOYMENT_MODE: "${PAPERCLIP_DEPLOYMENT_MODE:-authenticated}"
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: "${PAPERCLIP_DEPLOYMENT_EXPOSURE:-private}"
+      PAPERCLIP_PUBLIC_URL: "${PAPERCLIP_PUBLIC_URL:-http://localhost:3100}"
+
+      # Required for authenticated sessions and signed tool actions.
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env or run ./scripts/launch.sh}"
+      PAPERCLIP_TOOL_ACTION_SIGNING_SECRET: "${PAPERCLIP_TOOL_ACTION_SIGNING_SECRET:?Set PAPERCLIP_TOOL_ACTION_SIGNING_SECRET in .env or run ./scripts/launch.sh}"
+
+      # Optional provider credentials. Paperclip can start without these;
+      # agents need a provider configured before they can execute work.
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
+
+      # Disable anonymous telemetry in the self-hosted flagship deployment.
+      PAPERCLIP_TELEMETRY_DISABLED: "${PAPERCLIP_TELEMETRY_DISABLED:-1}"
+      DO_NOT_TRACK: "${DO_NOT_TRACK:-1}"
+      GEMINI_SANDBOX: "false"
+
+    volumes:
+      # Embedded database, secrets key, uploads, and agent workspaces.
+      - "${PAPERCLIP_DATA_DIR:-./data/paperclip}:/paperclip"
+      # ITD5 operating model and agent definitions, available as read-only
+      # reference material inside the container.
+      - "./companies:/opt/itd5-agentic-stack/companies:ro"
+
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3100/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-volumes:
-  paperclip_data:
-    driver: local
-
-# Notes:
-# - Paperclip uses an embedded PostgreSQL by default (no external DB needed)
-# - Set DATABASE_URL in .env to use your own Postgres instance
-# - For mobile access, use Tailscale to tunnel to port 3100
-# - gstack skills are installed locally on your machine, not in Docker
-#   Install gstack: git clone https://github.com/garrytan/gstack ~/.claude/skills/gstack
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3100/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
